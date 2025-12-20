@@ -13,8 +13,8 @@ description: 部署 Supabase 並配置 Cloudflare 域名
 - 點擊 "New Project"
 - 填寫項目信息：
   - Name: 選擇一個項目名稱（例如：jinyi-app）
-  - Database Password: 設置一個強密碼（請記住這個密碼）
-  - Region: 選擇離你最近的區域（建議選擇 Singapore 或 Tokyo）
+  - Database Password: 設置一個強密碼（gter6468）
+  - Region: 選擇離你最近的區域（taipei）
   - Pricing Plan: 選擇 Free tier
 - 點擊 "Create new project"
 - 等待項目初始化（約 2 分鐘）

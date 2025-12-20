@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Appointment, Doctor, SiteSettings } from '../types';
 import { DOCTORS as INITIAL_DOCTORS } from '../constants';
-import { saveUserData, loadUserData, loadAllUsersData, isSupabaseConfigured } from '../services/supabaseService';
+import { saveUserData, loadUserData, loadAllUsersData, isSupabaseConfigured, subscribeToUserData } from '../services/supabaseService';
 
 interface AuthContextType {
   user: User | null;
@@ -175,10 +175,32 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
     localStorage.setItem('hb_settings', JSON.stringify(settings));
   }, [settings]);
 
+  // Setup Real-time Subscription
+  useEffect(() => {
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    if (user && isSupabaseConfigured() && user.role !== 'admin') {
+      console.log('Enabling real-time sync for user:', user.id);
+      subscription = subscribeToUserData(user.id, (newData) => {
+        if (newData && newData.appointments) {
+          console.log('Real-time update received:', newData.appointments.length, 'appointments');
+          setAppointments(newData.appointments);
+        }
+      });
+    }
+
+    return () => {
+      if (subscription) {
+        console.log('Cleaning up real-time subscription');
+        subscription.unsubscribe();
+      }
+    };
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       localStorage.setItem('hb_session_user', JSON.stringify(user));
-      loadDataFromSupabase(user.id); // Load fresh data on login
+      loadDataFromSupabase(user.id); // Load initial data on login
     } else {
       localStorage.removeItem('hb_session_user');
     }

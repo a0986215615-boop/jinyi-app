@@ -1,0 +1,51 @@
+[0]<button aria-label='Toggle navigation menu' class='mat-mdc-tooltip-trigger floating-toggle-button ng-tns-c3933060810-1 expanded ng-trigger ng-trigger-fadeInOut ms-button-icon ms-button-primary ng-star-inserted' />
+	[1]<span >menu_open />
+[2]<a class='logo-title-wrapper ng-tns-c3933060810-1' href='/app/' />
+	[3]<ms-logo-icon  />
+[4]<a class='back-item ms-button-borderless ng-star-inserted' href='/app/'>Dashboard />
+	[5]<span >chevron_left />
+[6]<a class='ms-button-borderless ng-star-inserted active' href='/app/api-keys'>API keys />
+[7]<a class='ms-button-borderless ng-star-inserted' href='/app/projects'>Projects />
+[8]<a class='ms-button-borderless ng-star-inserted' href='/app/usage'>Usage and Billing />
+[9]<a class='ms-button-borderless ng-star-inserted' href='/app/logs'>Logs and Datasets />
+[10]<a class='ms-button-borderless ng-star-inserted' href='https://ai.google.dev/gemini-api/docs/changelog'>Changelog />
+	[11]<span >arrow_outward />
+[12]<button class='let-it-snow-button ng-tns-c3933060810-1 ms-button-borderless ng-star-inserted'>Let it snow />
+	[13]<span >ac_unit />
+[14]<button class='ms-button-borderless'>Get API key />
+	[15]<span >key />
+[16]<button class='mat-mdc-menu-trigger trigger-button ms-button-borderless'>Settings />
+	[17]<span >settings />
+[18]<button class='account-switcher-button ng-tns-c3933060810-1 ms-button-borderless' />
+	[19]<span >a0986215615@gmail.com />
+[20]<div aria-label='Google Account: 1 2阿 (a0986215615@gmail.com)' class='mat-mdc-tooltip-trigger button-container' role='button' />
+	[21]<connect-avatar  />
+		[22]<img  />
+API Keys
+[23]<a aria-label='API quickstart' class='api-quickstart-link ms-button-borderless' href='https://ai.google.dev/gemini-api/docs/quickstart'>API quickstart />
+	[24]<span >docs />
+[25]<button class='ms-button-primary'>Create API key />
+	[26]<span >key />
+Group by
+[27]<button class='ms-button-active ms-button-filter-chip'>API key />
+[28]<button class='ms-button-filter-chip'>Project />
+Filter by
+[29]<div  />
+	[30]<div  />
+		[31]<div  />
+			[32]<mat-select class='mat-mdc-select mat-mdc-select-empty' id='mat-select-0' placeholder='All projects' role='combobox' />
+				[33]<div  />
+					[34]<div  />
+						[35]<span >All projects />
+					[36]<div  />
+Key
+Project
+[37]<th class='mat-sort-header mat-mdc-header-cell mdc-data-table__header-cell cdk-header-cell table-header-cell cdk-column-Created-On mat-column-Created-On ng-star-inserted' role='columnheader' />
+	[38]<div class='mat-sort-header-container mat-focus-indicator' role='button' />
+		[39]<div >Created on />
+		[40]<div  />
+Quota tier
+Can't find your API keys here?
+This list only shows API keys for projects imported into Google AI Studio. Import other projects to manage their associated API Keys. You can also create a new API Key above.
+[41]<a href='https://ai.google.dev/gemini-api/docs/api-key#import-projects'>Learn more />
+[42]<button class='ms-button-large ms-button-primary ng-star-inserted'>Import projects />

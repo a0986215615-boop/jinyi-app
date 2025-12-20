@@ -1,0 +1,53 @@
+Import projects
+[0]<button aria-label='Close panel' class='ms-button-borderless ms-button-icon ms-button-small' />
+	[1]<span >close />
+Search your projects
+[2]<label class='ng-star-inserted'>Google AI Studio does not show all your Cloud Projects. To import them, search by name or project ID. />
+search
+[3]<input aria-label='Google AI Studio does not show all your Cloud Projects. To import them, search by name or project ID.' class='mat-mdc-autocomplete-trigger has-icon ng-untouched ng-pristine ng-valid ng-star-inserted' id='input-1074A893-EB43-495B-A3D7-171D33B65077' placeholder='Search for a project' role='combobox' />
+Projects you may want to import
+[4]<div  />
+	[5]<input class='mdc-checkbox__native-control' id='mat-mdc-checkbox-0-input' />
+Select all
+[6]<div  />
+	[7]<input class='mdc-checkbox__native-control' id='mat-mdc-checkbox-1-input' />
+-
+dulcet-vehicle-p0pgs
+[8]<div  />
+	[9]<input class='mdc-checkbox__native-control' id='mat-mdc-checkbox-2-input' />
+My First Project
+stoked-mapper-478917-b8
+menu_open
+chevron_left
+Dashboard
+API keys
+Projects
+Usage and Billing
+Logs and Datasets
+Changelog
+arrow_outward
+ac_unit
+Let it snow
+key
+Get API key
+settings
+Settings
+a0986215615@gmail.com
+API Keys
+docs
+API quickstart
+key
+Create API key
+Group by
+API key
+Project
+Filter by
+All projects
+Key
+Project
+Created on
+Quota tier
+Can't find your API keys here?
+This list only shows API keys for projects imported into Google AI Studio. Import other projects to manage their associated API Keys. You can also create a new API Key above.
+Learn more
+Import projects
