@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統診斷工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        button {
+            background: #0070f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #0051a2;
+        }
+
+        button.secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f9f9f9;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+
+        .success {
+            color: green;
+            background: #e6fffa;
+            border: 1px solid #b2f5ea;
+        }
+
+        .error {
+            color: red;
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+        }
+
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🛠️ 系統診斷工具</h1>
+    <p>此工具用於測試 Supabase 資料庫和 Gemini AI 的連接狀態。</p>
+
+    <!-- 環境變量檢查 -->
+    <div class="card">
+        <h2>1. 環境變量檢查</h2>
+        <div id="env-status" class="status">點擊下方按鈕檢查...</div>
+        <div style="margin-top: 15px;">
+            <button onclick="checkEnv()">檢查變量</button>
+        </div>
+    </div>
+
+    <!-- Supabase 測試 -->
+    <div class="card">
+        <h2>2. Supabase 資料庫測試</h2>
+        <div id="supabase-status" class="status">等待測試...</div>
+        <div style="margin-top: 15px;">
+            <button onclick="testSupabase()">測試連接 & 寫入</button>
+            <button class="secondary" onclick="readSupabase()">讀取數據</button>
+        </div>
+    </div>
+
+    <!-- Gemini 測試 -->
+    <div class="card">
+        <h2>3. Gemini AI 測試</h2>
+        <p>輸入測試症狀（例如：頭痛、發燒）：</p>
+        <input type="text" id="symptom-input" value="我的狗狗一直吐，不想吃東西">
+        <div id="gemini-status" class="status">等待測試...</div>
+        <div style="margin-top: 15px;">
+            <button onclick="testGemini()">測試 AI 分析</button>
+        </div>
+    </div>
+
+    <script>
+        // 配置信息 (部署時會由 Vite 替換，但在這裡我們需要手動填入或從 localStorage 讀取)
+        // 注意：在純 HTML 中無法直接讀取 .env，所以我們嘗試從 URL 參數或手動輸入獲取
+
+        let SUPABASE_URL = 'https://zntvofpaohnouepquxke.supabase.co';
+        let SUPABASE_KEY = 'sb_publishable_TZOgnWwcDA1bRfHghcRSyg_lbmnh4jb';
+        let GEMINI_KEY = ''; // 需要用戶輸入或從之前的步驟獲取
+
+        function log(elementId, message, type = 'normal') {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = 'status ' + type;
+        }
+
+        function checkEnv() {
+            let msg = `Supabase URL: ${SUPABASE_URL ? '✅ 已配置' : '❌ 未配置'}\n`;
+            msg += `Supabase Key: ${SUPABASE_KEY ? '✅ 已配置' : '❌ 未配置'}\n`;
+
+            // 嘗試從 localStorage 獲取 Gemini Key 如果有
+            const storedKey = localStorage.getItem('gemini_key');
+            if (storedKey) GEMINI_KEY = storedKey;
+
+            if (!GEMINI_KEY) {
+                GEMINI_KEY = prompt("請輸入您的 Gemini API Key 進行測試:");
+                if (GEMINI_KEY) localStorage.setItem('gemini_key', GEMINI_KEY);
+            }
+
+            msg += `Gemini Key: ${GEMINI_KEY ? '✅ 已配置 (' + GEMINI_KEY.slice(0, 5) + '...)' : '❌ 未配置'}`;
+
+            log('env-status', msg, GEMINI_KEY && SUPABASE_URL ? 'success' : 'error');
+        }
+
+        async function testSupabase() {
+            if (!SUPABASE_URL || !SUPABASE_KEY) {
+                log('supabase-status', '錯誤：缺少 Supabase 配置', 'error');
+                return;
+            }
+
+            try {
+                const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                log('supabase-status', '正在連接 Supabase...');
+
+                const testId = 'test-' + Math.random().toString(36).substr(2, 9);
+                const { data, error } = await client
+                    .from('user_data')
+                    .upsert({
+                        user_id: testId,
+                        data: { test: true, timestamp: new Date().toISOString() }
+                    })
+                    .select();
+
+                if (error) throw error;
+
+                log('supabase-status', `✅ 連接成功！\n已寫入測試數據 ID: ${testId}\n回傳: ${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (e) {
+                log('supabase-status', `❌ 連接失敗: ${e.message}`, 'error');
+            }
+        }
+
+        async function readSupabase() {
+            try {
+                const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                const { data, error } = await client.from('user_data').select('count', { count: 'exact' });
+
+                if (error) throw error;
+                log('supabase-status', `✅ 讀取成功！\n資料表中有 ${data.length} 筆數據 (或更多)`, 'success');
+            } catch (e) {
+                log('supabase-status', `❌ 讀取失敗: ${e.message}`, 'error');
+            }
+        }
+
+        async function testGemini() {
+            if (!GEMINI_KEY) {
+                checkEnv();
+                if (!GEMINI_KEY) return;
+            }
+
+            const symptom = document.getElementById('symptom-input').value;
+            log('gemini-status', '正在呼叫 Gemini API...');
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: `分析這個症狀並推薦科別：${symptom}。只回傳 JSON 格式：{"department": "科別名稱", "reason": "原因"}` }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error.message);
+                }
+
+                const resultText = data.candidates[0].content.parts[0].text;
+                log('gemini-status', `✅ 分析成功！\n回傳結果:\n${resultText}`, 'success');
+            } catch (e) {
+                log('gemini-status', `❌ 分析失敗: ${e.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>

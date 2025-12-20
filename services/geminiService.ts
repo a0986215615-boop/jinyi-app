@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 export const analyzeSymptoms = async (symptoms: string): Promise<{ departmentId: string; reason: string } | null> => {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash',
       contents: `
         User symptoms: "${symptoms}".
         Available departments: ${JSON.stringify(DEPARTMENTS.map(d => ({ id: d.id, name: d.name, description: d.description })))}.
@@ -29,7 +29,7 @@ export const analyzeSymptoms = async (symptoms: string): Promise<{ departmentId:
 
     const text = response.text;
     if (!text) return null;
-    
+
     return JSON.parse(text);
   } catch (error) {
     console.error("Gemini Analysis Error:", error);

@@ -81,6 +81,31 @@ export const loadUserData = async (userId: string): Promise<any | null> => {
     }
 };
 
+// 加載所有用戶數據（管理員用）
+export const loadAllUsersData = async (): Promise<any[]> => {
+    const client = getSupabaseClient();
+    if (!client) return [];
+
+    try {
+        const { data, error } = await client
+            .from('user_data')
+            .select('user_id, data');
+
+        if (error) {
+            console.error('Error loading all users data:', error);
+            return [];
+        }
+
+        return data.map(row => ({
+            userId: row.user_id,
+            ...row.data
+        }));
+    } catch (err) {
+        console.error('Exception loading all users data:', err);
+        return [];
+    }
+};
+
 // 刪除用戶數據
 export const deleteUserData = async (userId: string): Promise<boolean> => {
     const client = getSupabaseClient();

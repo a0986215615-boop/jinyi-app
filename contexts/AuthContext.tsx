@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Appointment, Doctor, SiteSettings } from '../types';
 import { DOCTORS as INITIAL_DOCTORS } from '../constants';
+import { saveUserData, loadUserData, loadAllUsersData, isSupabaseConfigured } from '../services/supabaseService';
 
 interface AuthContextType {
   user: User | null;
@@ -9,12 +10,12 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (user: Omit<User, 'id' | 'role'>) => Promise<boolean>;
   logout: () => void;
-  
+
   // User Management (Admin)
   users: User[];
   deleteUser: (id: string) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
-  
+
   // Appointment Management
   appointments: Appointment[];
   userAppointments: Appointment[];
@@ -48,7 +49,7 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
   const [doctors, setDoctors] = useState<Doctor[]>(INITIAL_DOCTORS); // Manage doctors in state
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
 
-  // Load data from localStorage on mount
+  // Load data from localStorage on mount (Initial load)
   useEffect(() => {
     const storedUsers = localStorage.getItem('hb_users');
     const storedAppts = localStorage.getItem('hb_appointments');
@@ -89,45 +90,95 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
       loadedUsers.push(testUser);
     }
 
-    // Update users in local storage if we added defaults
-    if (!storedUsers || loadedUsers.length > (JSON.parse(storedUsers || '[]')).length) {
-       localStorage.setItem('hb_users', JSON.stringify(loadedUsers));
-    }
-
     setUsers(loadedUsers);
-
     if (storedAppts) setAppointments(JSON.parse(storedAppts));
     if (storedDoctors) setDoctors(JSON.parse(storedDoctors));
     if (storedSettings) setSettings(JSON.parse(storedSettings));
-    if (sessionUser) setUser(JSON.parse(sessionUser));
+
+    // Auto-login from session
+    if (sessionUser) {
+      const parsedUser = JSON.parse(sessionUser);
+      setUser(parsedUser);
+      // If Supabase is configured, try to load fresh data
+      if (isSupabaseConfigured()) {
+        loadDataFromSupabase(parsedUser.id);
+      }
+    }
   }, []);
 
-  // Sync users to localStorage
-  useEffect(() => {
-    if (users.length > 0) {
-        localStorage.setItem('hb_users', JSON.stringify(users));
+  // Helper to load data from Supabase
+  const loadDataFromSupabase = async (userId: string) => {
+    // Check if user is admin
+    const isAdminUser = users.find(u => u.id === userId)?.role === 'admin' || userId === 'admin-001'; // Fallback check
+
+    if (isAdminUser) {
+      console.log('Admin logged in, loading all data...');
+      const allData = await loadAllUsersData();
+
+      let allAppointments: Appointment[] = [];
+
+      allData.forEach(userData => {
+        if (userData.appointments && Array.isArray(userData.appointments)) {
+          allAppointments = [...allAppointments, ...userData.appointments];
+        }
+      });
+
+      // Remove duplicates based on ID if any
+      const uniqueAppointments = Array.from(new Map(allAppointments.map(item => [item.id, item])).values());
+
+      if (uniqueAppointments.length > 0) {
+        setAppointments(uniqueAppointments);
+        console.log(`Loaded ${uniqueAppointments.length} appointments for admin.`);
+      }
+    } else {
+      // Normal user
+      const data = await loadUserData(userId);
+      if (data) {
+        if (data.appointments) setAppointments(data.appointments);
+        console.log('Data loaded from Supabase for user');
+      }
     }
+  };
+
+  // Helper to save data to Supabase
+  const saveDataToSupabase = async () => {
+    if (!user || !isSupabaseConfigured()) return;
+
+    // We save the entire state relevant to the user
+    // In a real app, this would be normalized tables.
+    // Here we dump the JSON for simplicity as per the requirement.
+    const dataToSave = {
+      appointments,
+      // users, // Don't save all users to one user's record
+      // doctors,
+      // settings
+    };
+
+    await saveUserData(user.id, dataToSave);
+  };
+
+  // Sync to localStorage AND Supabase on changes
+  useEffect(() => {
+    if (users.length > 0) localStorage.setItem('hb_users', JSON.stringify(users));
   }, [users]);
 
-  // Sync appointments to localStorage
   useEffect(() => {
     localStorage.setItem('hb_appointments', JSON.stringify(appointments));
+    saveDataToSupabase(); // Save to Supabase when appointments change
   }, [appointments]);
 
-  // Sync doctors to localStorage
   useEffect(() => {
     localStorage.setItem('hb_doctors', JSON.stringify(doctors));
   }, [doctors]);
 
-  // Sync settings to localStorage
   useEffect(() => {
     localStorage.setItem('hb_settings', JSON.stringify(settings));
   }, [settings]);
 
-  // Sync session to localStorage
   useEffect(() => {
     if (user) {
       localStorage.setItem('hb_session_user', JSON.stringify(user));
+      loadDataFromSupabase(user.id); // Load fresh data on login
     } else {
       localStorage.removeItem('hb_session_user');
     }
@@ -162,12 +213,12 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
   const logout = () => {
     setUser(null);
   };
-  
+
   const deleteUser = (id: string) => {
     setUsers(prev => prev.filter(u => u.id !== id));
     // If the deleted user is the current logged in user (edge case), logout
     if (user && user.id === id) {
-        logout();
+      logout();
     }
   };
 
@@ -175,7 +226,7 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
     setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
     // If updating the currently logged in user, update session state as well
     if (user && user.id === id) {
-        setUser(prev => prev ? { ...prev, ...updates } : null);
+      setUser(prev => prev ? { ...prev, ...updates } : null);
     }
   };
 
@@ -184,14 +235,43 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
     setAppointments(prev => [newApt, ...prev]);
   };
 
-  const updateAppointment = (id: string, updates: Partial<Appointment>) => {
+  const updateAppointment = async (id: string, updates: Partial<Appointment>) => {
+    // Update local state first for immediate UI feedback
     setAppointments(prev => prev.map(apt => apt.id === id ? { ...apt, ...updates } : apt));
+
+    // If admin is logged in, we need to sync this change to the specific user's data in Supabase
+    if (user?.role === 'admin' && isSupabaseConfigured()) {
+      const targetAppointment = appointments.find(a => a.id === id);
+      if (targetAppointment && targetAppointment.userId) {
+        const targetUserId = targetAppointment.userId;
+
+        try {
+          // 1. Load target user's data
+          const userData = await loadUserData(targetUserId);
+          if (userData && userData.appointments) {
+            // 2. Update the specific appointment in their data
+            const updatedUserAppointments = userData.appointments.map((apt: Appointment) =>
+              apt.id === id ? { ...apt, ...updates } : apt
+            );
+
+            // 3. Save back to Supabase
+            await saveUserData(targetUserId, {
+              ...userData,
+              appointments: updatedUserAppointments
+            });
+            console.log(`Synced appointment update to user ${targetUserId}`);
+          }
+        } catch (error) {
+          console.error("Failed to sync admin update to user:", error);
+        }
+      }
+    }
   };
 
   const cancelAppointment = (id: string, reason: string = '醫師臨時行程異動') => {
-    updateAppointment(id, { 
-        status: 'cancelled',
-        cancellationReason: reason
+    updateAppointment(id, {
+      status: 'cancelled',
+      cancellationReason: reason
     });
   };
 
@@ -211,17 +291,17 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
   const userAppointments = appointments.filter(apt => apt.userId === user?.id);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated: !!user, 
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
       isAdmin: user?.role === 'admin',
-      login, 
-      register, 
-      logout, 
+      login,
+      register,
+      logout,
       users,
       deleteUser,
       updateUser,
-      appointments, 
+      appointments,
       addAppointment,
       updateAppointment,
       cancelAppointment,

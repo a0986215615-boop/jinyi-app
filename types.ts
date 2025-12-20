@@ -11,6 +11,7 @@ export interface Doctor {
   departmentId: string;
   specialty: string;
   image: string;
+  availableSlots?: string[];
 }
 
 export interface TimeSlot {
