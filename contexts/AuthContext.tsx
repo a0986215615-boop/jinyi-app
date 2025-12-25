@@ -135,6 +135,7 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
       const data = await loadUserData(userId);
       if (data) {
         if (data.appointments) setAppointments(data.appointments);
+        if (data.settings) setSettings(data.settings);
         console.log('Data loaded from Supabase for user');
       }
     }
@@ -145,13 +146,11 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
     if (!user || !isSupabaseConfigured()) return;
 
     // We save the entire state relevant to the user
-    // In a real app, this would be normalized tables.
-    // Here we dump the JSON for simplicity as per the requirement.
     const dataToSave = {
       appointments,
-      // users, // Don't save all users to one user's record
-      // doctors,
-      // settings
+      // Only admins or specific users might manage global settings, 
+      // but for this simple version, settings are synced per user.
+      settings
     };
 
     await saveUserData(user.id, dataToSave);
@@ -173,6 +172,7 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
 
   useEffect(() => {
     localStorage.setItem('hb_settings', JSON.stringify(settings));
+    saveDataToSupabase(); // Save to Supabase when settings change
   }, [settings]);
 
   // Setup Real-time Subscription
@@ -182,9 +182,15 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
     if (user && isSupabaseConfigured() && user.role !== 'admin') {
       console.log('Enabling real-time sync for user:', user.id);
       subscription = subscribeToUserData(user.id, (newData) => {
-        if (newData && newData.appointments) {
-          console.log('Real-time update received:', newData.appointments.length, 'appointments');
-          setAppointments(newData.appointments);
+        if (newData) {
+          if (newData.appointments) {
+            console.log('Real-time update received:', newData.appointments.length, 'appointments');
+            setAppointments(newData.appointments);
+          }
+          if (newData.settings) {
+            console.log('Real-time settings update received');
+            setSettings(newData.settings);
+          }
         }
       });
     }
