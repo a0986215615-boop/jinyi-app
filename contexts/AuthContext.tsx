@@ -36,9 +36,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const DEFAULT_SETTINGS: SiteSettings = {
-  appName: '康健獸醫診所',
+  appName: '近易動物醫院',
   welcomeTitle: '守護毛孩的健康',
-  welcomeSubtitle: '從智慧預約開始',
+  welcomeSubtitle: '從美好的一天開始',
   description: '全天候線上掛號，整合 AI 症狀分析，為您的寵物精準推薦合適的醫療服務。'
 };
 
