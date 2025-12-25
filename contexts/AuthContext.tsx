@@ -130,6 +130,13 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
         setAppointments(uniqueAppointments);
         console.log(`Loaded ${uniqueAppointments.length} appointments for admin.`);
       }
+
+      // Load admin's own settings
+      const adminData = await loadUserData(userId);
+      if (adminData && adminData.settings) {
+        setSettings(adminData.settings);
+        console.log('Admin settings loaded from Supabase');
+      }
     } else {
       // Normal user
       const data = await loadUserData(userId);
@@ -179,13 +186,19 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
   useEffect(() => {
     let subscription: { unsubscribe: () => void } | null = null;
 
-    if (user && isSupabaseConfigured() && user.role !== 'admin') {
+    if (user && isSupabaseConfigured()) {
       console.log('Enabling real-time sync for user:', user.id);
       subscription = subscribeToUserData(user.id, (newData) => {
         if (newData) {
           if (newData.appointments) {
             console.log('Real-time update received:', newData.appointments.length, 'appointments');
-            setAppointments(newData.appointments);
+            // For admin, merge all appointments; for normal users, replace
+            if (user.role === 'admin') {
+              // Admin should see all appointments, so we might need to reload
+              loadDataFromSupabase(user.id);
+            } else {
+              setAppointments(newData.appointments);
+            }
           }
           if (newData.settings) {
             console.log('Real-time settings update received');
