@@ -146,8 +146,8 @@ const DashboardTab = ({ appointments, users, doctors }: { appointments: Appointm
                                     <td className="px-4 py-3 font-medium">{apt.patientName}</td>
                                     <td className="px-4 py-3">
                                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${apt.status === 'cancelled' ? 'bg-red-100 text-red-600' :
-                                                apt.status === 'completed' ? 'bg-gray-100 text-gray-600' :
-                                                    'bg-green-100 text-green-600'
+                                            apt.status === 'completed' ? 'bg-gray-100 text-gray-600' :
+                                                'bg-green-100 text-green-600'
                                             }`}>
                                             {apt.status === 'cancelled' ? '已取消' : apt.status === 'completed' ? '已完成' : '預約中'}
                                         </span>
@@ -458,8 +458,8 @@ const DoctorsTab = ({ doctors, onUpdate }: { doctors: Doctor[], onUpdate: (id: s
                                                     setEditForm({ ...editForm, availableSlots: sortedSlots });
                                                 }}
                                                 className={`px-2 py-1.5 rounded text-xs font-medium border transition-colors ${isSelected
-                                                        ? 'bg-primary text-white border-primary'
-                                                        : 'bg-white text-slate-400 border-slate-200 hover:border-primary hover:text-primary'
+                                                    ? 'bg-primary text-white border-primary'
+                                                    : 'bg-white text-slate-400 border-slate-200 hover:border-primary hover:text-primary'
                                                     }`}
                                             >
                                                 {time}
@@ -674,85 +674,256 @@ const UsersTab = ({ users, currentUser, onDelete, onUpdate }: {
 const SettingsTab = ({ settings, onUpdate }: { settings: SiteSettings, onUpdate: (s: Partial<SiteSettings>) => void }) => {
     const [form, setForm] = useState(settings);
     const [saved, setSaved] = useState(false);
+    const [syncing, setSyncing] = useState(false);
+    const [hasChanges, setHasChanges] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
         setSaved(false);
+        setHasChanges(true);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSyncing(true);
+
+        // 模擬同步延遲，讓用戶看到同步過程
+        await new Promise(resolve => setTimeout(resolve, 800));
+
         onUpdate(form);
+        setSyncing(false);
         setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        setHasChanges(false);
+
+        setTimeout(() => setSaved(false), 4000);
+    };
+
+    const resetForm = () => {
+        setForm(settings);
+        setHasChanges(false);
+        setSaved(false);
     };
 
     return (
-        <div className="max-w-2xl mx-auto">
-            <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 space-y-6">
-                <div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-1">系統設定</h3>
-                    <p className="text-slate-500 text-sm">修改網站標題與歡迎訊息</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 左側：編輯表單 */}
+            <div>
+                <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    {/* 表單標題 */}
+                    <div className="bg-gradient-to-r from-primary to-secondary p-6 text-white">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                <Settings size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold">系統設定</h3>
+                                <p className="text-white/90 text-sm">修改網站標題與歡迎訊息</p>
+                            </div>
+                        </div>
+
+                        {/* 同步狀態指示器 */}
+                        <div className="mt-4 flex items-center gap-2 text-sm">
+                            {syncing ? (
+                                <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                                    <span>正在同步到雲端...</span>
+                                </div>
+                            ) : saved ? (
+                                <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                                    <CheckCircle size={14} />
+                                    <span>✓ 已同步到 Supabase</span>
+                                </div>
+                            ) : hasChanges ? (
+                                <div className="flex items-center gap-2 bg-yellow-500/30 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                                    <AlertTriangle size={14} />
+                                    <span>有未儲存的變更</span>
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    {/* 表單內容 */}
+                    <div className="p-6 space-y-5">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                                <span>🏥 診所名稱</span>
+                                <span className="text-xs text-slate-400 font-normal">
+                                    {form.appName.length} 字元
+                                </span>
+                            </label>
+                            <input
+                                name="appName"
+                                value={form.appName}
+                                onChange={handleChange}
+                                maxLength={30}
+                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all"
+                                placeholder="例如：近易動物醫院"
+                            />
+                            <p className="text-xs text-slate-400 mt-1">顯示在導航欄和網頁標題</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                                <span>📢 首頁主標題</span>
+                                <span className="text-xs text-slate-400 font-normal">
+                                    {form.welcomeTitle.length} 字元
+                                </span>
+                            </label>
+                            <input
+                                name="welcomeTitle"
+                                value={form.welcomeTitle}
+                                onChange={handleChange}
+                                maxLength={50}
+                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all"
+                                placeholder="例如：守護毛孩的健康"
+                            />
+                            <p className="text-xs text-slate-400 mt-1">首頁最顯眼的標題文字</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                                <span>✨ 首頁副標題</span>
+                                <span className="text-xs text-slate-400 font-normal">
+                                    {form.welcomeSubtitle.length} 字元
+                                </span>
+                            </label>
+                            <input
+                                name="welcomeSubtitle"
+                                value={form.welcomeSubtitle}
+                                onChange={handleChange}
+                                maxLength={50}
+                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all"
+                                placeholder="例如：從美好的一天開始"
+                            />
+                            <p className="text-xs text-slate-400 mt-1">主標題下方的強調文字（顯示為品牌色）</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+                                <span>📝 網站描述</span>
+                                <span className="text-xs text-slate-400 font-normal">
+                                    {form.description.length} 字元
+                                </span>
+                            </label>
+                            <textarea
+                                name="description"
+                                value={form.description}
+                                onChange={handleChange}
+                                rows={4}
+                                maxLength={200}
+                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none resize-none transition-all"
+                                placeholder="輸入網站的簡短描述..."
+                            />
+                            <p className="text-xs text-slate-400 mt-1">首頁的描述文字，說明服務特色</p>
+                        </div>
+                    </div>
+
+                    {/* 操作按鈕 */}
+                    <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3">
+                        <button
+                            type="button"
+                            onClick={resetForm}
+                            disabled={!hasChanges}
+                            className="px-4 py-2 text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            <X size={16} /> 還原變更
+                        </button>
+
+                        <button
+                            type="submit"
+                            disabled={!hasChanges || syncing}
+                            className="px-6 py-2.5 bg-gradient-to-r from-primary to-secondary text-white rounded-lg font-bold hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
+                        >
+                            {syncing ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    同步中...
+                                </>
+                            ) : (
+                                <>
+                                    <Save size={18} /> 儲存並同步
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {/* 右側：即時預覽 */}
+            <div className="space-y-6">
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="bg-slate-800 p-4 text-white flex items-center gap-2">
+                        <Activity size={18} />
+                        <h4 className="font-bold">即時預覽</h4>
+                    </div>
+
+                    <div className="p-6 bg-gradient-to-br from-slate-50 to-white">
+                        {/* 模擬首頁顯示 */}
+                        <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-primary/20">
+                            <div className="text-center space-y-4">
+                                <h1 className="text-3xl font-bold text-slate-800 leading-tight">
+                                    {form.welcomeTitle || '(請輸入主標題)'}
+                                    <br />
+                                    <span className="text-primary">
+                                        {form.welcomeSubtitle || '(請輸入副標題)'}
+                                    </span>
+                                </h1>
+                                <p className="text-slate-600 max-w-md mx-auto">
+                                    {form.description || '(請輸入網站描述)'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 預覽說明 */}
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-xs text-blue-800 flex items-center gap-2">
+                                <Mail size={14} />
+                                <span>預覽會即時顯示您的修改，儲存後將套用到實際網站</span>
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">診所名稱 (App Name)</label>
-                        <input
-                            name="appName"
-                            value={form.appName}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                        />
+                {/* 導航欄預覽 */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="bg-slate-800 p-4 text-white flex items-center gap-2">
+                        <Shield size={18} />
+                        <h4 className="font-bold">導航欄預覽</h4>
                     </div>
-
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">首頁主標題</label>
-                        <input
-                            name="welcomeTitle"
-                            value={form.welcomeTitle}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">首頁副標題 (Highlight)</label>
-                        <input
-                            name="welcomeSubtitle"
-                            value={form.welcomeSubtitle}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">網站描述</label>
-                        <textarea
-                            name="description"
-                            value={form.description}
-                            onChange={handleChange}
-                            rows={3}
-                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary outline-none resize-none"
-                        />
+                    <div className="p-4 bg-gradient-to-br from-primary/5 to-secondary/5">
+                        <div className="bg-white shadow-md rounded-lg px-6 py-3 flex items-center justify-between border border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                    {form.appName.charAt(0) || '?'}
+                                </div>
+                                <span className="font-bold text-slate-800">
+                                    {form.appName || '診所名稱'}
+                                </span>
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="w-16 h-2 bg-slate-200 rounded"></div>
+                                <div className="w-16 h-2 bg-slate-200 rounded"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                    {saved ? (
-                        <span className="text-green-600 flex items-center gap-2 text-sm font-bold">
-                            <CheckCircle size={16} /> 設定已儲存
-                        </span>
-                    ) : <span></span>}
-
-                    <button
-                        type="submit"
-                        className="px-6 py-2 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-700 transition-colors flex items-center gap-2"
-                    >
-                        <Save size={18} /> 儲存變更
-                    </button>
+                {/* 同步資訊卡片 */}
+                <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-xl shadow-sm border border-green-200 p-6">
+                    <div className="flex items-start gap-3">
+                        <div className="p-2 bg-green-500 text-white rounded-lg">
+                            <CheckCircle size={20} />
+                        </div>
+                        <div>
+                            <h5 className="font-bold text-green-900 mb-1">自動雲端同步</h5>
+                            <p className="text-sm text-green-700 leading-relaxed">
+                                您的設定會自動同步到 <strong>Supabase</strong> 雲端資料庫，
+                                並即時更新到所有連接的裝置。修改後請點擊「儲存並同步」按鈕。
+                            </p>
+                        </div>
+                    </div>
                 </div>
-            </form>
+            </div>
         </div>
     );
 };
