@@ -157,3 +157,30 @@ export const subscribeToUserData = (
 
     return subscription;
 };
+
+// 加載全域系統設定（從管理員帳戶讀取）
+export const loadSystemSettings = async (): Promise<any | null> => {
+    const client = getSupabaseClient();
+    if (!client) return null;
+
+    try {
+        // 嘗試讀取管理員 (admin-001) 的設定
+        // 注意：這依賴於 RLS 策略允許公開讀取管理員數據，或者此查詢在服務端運行
+        // 如果 RLS 禁止，此調用會失敗，則回退到預設值
+        const { data, error } = await client
+            .from('user_data')
+            .select('data')
+            .eq('user_id', 'admin-001')
+            .single();
+
+        if (error) {
+            console.warn('Could not load global settings (RLS restrictions?):', error.message);
+            return null;
+        }
+
+        return data?.data?.settings || null;
+    } catch (err) {
+        console.error('Exception loading system settings:', err);
+        return null;
+    }
+};

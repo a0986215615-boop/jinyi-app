@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Appointment, Doctor, SiteSettings } from '../types';
 import { DOCTORS as INITIAL_DOCTORS } from '../constants';
-import { saveUserData, loadUserData, loadAllUsersData, isSupabaseConfigured, subscribeToUserData } from '../services/supabaseService';
+import { saveUserData, loadUserData, loadAllUsersData, isSupabaseConfigured, subscribeToUserData, loadSystemSettings } from '../services/supabaseService';
 
 interface AuthContextType {
   user: User | null;
@@ -103,6 +103,17 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
       if (isSupabaseConfigured()) {
         loadDataFromSupabase(parsedUser.id);
       }
+    }
+
+    // Always try to load latest global settings from Supabase (for guests and users)
+    if (isSupabaseConfigured()) {
+      loadSystemSettings().then(globalSettings => {
+        if (globalSettings) {
+          console.log('Loaded global settings from Supabase');
+          setSettings(globalSettings);
+          localStorage.setItem('hb_settings', JSON.stringify(globalSettings));
+        }
+      });
     }
   }, []);
 
@@ -215,6 +226,25 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
       }
     };
   }, [user]);
+
+  // Setup Real-time Subscription for Global Settings (Listen to admin changes)
+  useEffect(() => {
+    let settingsSubscription: { unsubscribe: () => void } | null = null;
+
+    if (isSupabaseConfigured()) {
+      settingsSubscription = subscribeToUserData('admin-001', (newData) => {
+        if (newData && newData.settings) {
+          console.log('Global settings updated via Realtime');
+          setSettings(newData.settings);
+          localStorage.setItem('hb_settings', JSON.stringify(newData.settings));
+        }
+      });
+    }
+
+    return () => {
+      if (settingsSubscription) settingsSubscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
