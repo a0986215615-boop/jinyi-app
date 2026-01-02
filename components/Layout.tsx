@@ -42,8 +42,8 @@ export const Layout = ({ children }: { children?: React.ReactNode }) => {
                   key={item.path}
                   to={item.path}
                   className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive(item.path)
-                      ? 'bg-accent text-primary'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-primary'
+                    ? 'bg-accent text-primary'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-primary'
                     }`}
                 >
                   <span className="mr-2">{item.icon}</span>
@@ -57,8 +57,8 @@ export const Layout = ({ children }: { children?: React.ReactNode }) => {
                     <Link
                       to="/admin"
                       className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-colors ${isActive('/admin')
-                          ? 'bg-slate-800 text-white'
-                          : 'text-slate-800 bg-slate-100 hover:bg-slate-200'
+                        ? 'bg-slate-800 text-white'
+                        : 'text-slate-800 bg-slate-100 hover:bg-slate-200'
                         }`}
                     >
                       <ShieldCheck size={18} className="mr-2" />
@@ -69,8 +69,8 @@ export const Layout = ({ children }: { children?: React.ReactNode }) => {
                   <Link
                     to="/my-appointments"
                     className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive('/my-appointments')
-                        ? 'bg-accent text-primary'
-                        : 'text-slate-600 hover:bg-slate-100'
+                      ? 'bg-accent text-primary'
+                      : 'text-slate-600 hover:bg-slate-100'
                       }`}
                   >
                     <User size={18} className="mr-2" />
@@ -118,8 +118,8 @@ export const Layout = ({ children }: { children?: React.ReactNode }) => {
                 to={item.path}
                 onClick={() => setIsMenuOpen(false)}
                 className={`block px-3 py-3 rounded-md text-base font-medium flex items-center ${isActive(item.path)
-                    ? 'bg-accent text-primary'
-                    : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-accent text-primary'
+                  : 'text-slate-600 hover:bg-slate-100'
                   }`}
               >
                 <span className="mr-3">{item.icon}</span>
@@ -180,7 +180,7 @@ export const Layout = ({ children }: { children?: React.ReactNode }) => {
         <div className="max-w-6xl mx-auto px-4 text-center">
           <p className="mb-2 text-slate-200 font-semibold">{settings.appName}系統</p>
           <p className="text-sm mb-4">提供最專業、最便捷的醫療預約服務</p>
-          <p className="text-xs text-slate-500">&copy; 2024 近易動物醫院. All rights reserved.</p>
+          <p className="text-xs text-slate-500">&copy; 2024 {settings.appName}. All rights reserved.</p>
         </div>
       </footer>
     </div>
