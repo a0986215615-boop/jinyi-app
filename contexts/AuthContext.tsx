@@ -120,7 +120,10 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
   // Helper to load data from Supabase
   const loadDataFromSupabase = async (userId: string) => {
     // Check if user is admin
-    const isAdminUser = users.find(u => u.id === userId)?.role === 'admin' || userId === 'admin-001'; // Fallback check
+    const currentUser = users.find(u => u.id === userId);
+    const isAdminUser = currentUser?.role === 'admin' ||
+      userId === 'admin-001' ||
+      currentUser?.email === 'A0986215615@gmail.com';
 
     if (isAdminUser) {
       console.log('Admin logged in, loading all data...');
@@ -365,7 +368,7 @@ export const AuthProvider = ({ children }: { children?: React.ReactNode }) => {
     <AuthContext.Provider value={{
       user,
       isAuthenticated: !!user,
-      isAdmin: user?.role === 'admin',
+      isAdmin: user?.role === 'admin' || user?.email === 'A0986215615@gmail.com',
       login,
       register,
       logout,
