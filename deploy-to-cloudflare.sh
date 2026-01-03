@@ -1,98 +1,72 @@
 #!/bin/bash
 
-# 🚀 Cloudflare Pages 部署腳本
-# 此腳本會幫助您將應用部署到 Cloudflare Pages
+# 顏色設定
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-echo "🚀 開始部署流程..."
-echo ""
+echo -e "${GREEN}🚀 開始部署流程助手${NC}"
+echo "================================="
 
-# 檢查是否安裝了 Git
-if ! command -v git &> /dev/null; then
-    echo "❌ 錯誤：未找到 Git 命令"
-    echo "請先完成 Xcode Command Line Tools 的安裝"
-    echo "安裝完成後重新運行此腳本"
+# 1. 執行構建 Check
+echo -e "\n${YELLOW}🔨 正在執行本地構建 (npm run build)...${NC}"
+echo "這將確保產生的檔案是正確且最新的。"
+
+if npm run build; then
+    echo -e "${GREEN}✅ 構建成功！ 'dist' 資料夾已準備好。${NC}"
+else
+    echo -e "${RED}❌ 構建失敗。請檢查錯誤訊息。${NC}"
     exit 1
 fi
 
-echo "✅ Git 已安裝"
-echo ""
+# 2. Git 狀態檢查與推送
+echo -e "\n${YELLOW}� 正在處理 Git 版本控制...${NC}"
 
-# 檢查當前目錄
-CURRENT_DIR=$(pwd)
-echo "📁 當前目錄：$CURRENT_DIR"
-echo ""
-
-# 檢查是否已經是 Git 倉庫
-if [ -d ".git" ]; then
-    echo "ℹ️  已經是 Git 倉庫"
-else
-    echo "🔧 初始化 Git 倉庫..."
+# 確保是 git 倉庫
+if [ ! -d ".git" ]; then
     git init
-    echo "✅ Git 倉庫初始化完成"
+    echo "已初始化 Git 倉庫"
 fi
-echo ""
 
-# 添加所有文件
-echo "📦 添加文件到 Git..."
-git add .
-echo ""
-
-# 提交
-echo "💾 提交更改..."
-git commit -m "Add Supabase integration and deployment configs" || {
-    echo "ℹ️  沒有新的更改需要提交"
-}
-echo ""
-
-# 檢查是否已經設置了遠程倉庫
-if git remote get-url origin &> /dev/null; then
-    echo "✅ 遠程倉庫已配置："
-    git remote get-url origin
-    echo ""
-    echo "📤 推送到 GitHub..."
-    git push -u origin main || git push -u origin master
+# 檢查是否有變更
+if git status --porcelain | grep .; then
+    echo "發現變更，正在提交..."
+    git add .
+    git commit -m "Deploy: 更新與構建 ($(date +%Y-%m-%d\ %H:%M))"
 else
-    echo "⚠️  還沒有配置遠程倉庫"
-    echo ""
-    echo "請按照以下步驟操作："
-    echo ""
-    echo "1. 訪問 GitHub 創建新倉庫："
-    echo "   https://github.com/new"
-    echo ""
-    echo "2. 設置倉庫信息："
-    echo "   - Repository name: jinyi-app"
-    echo "   - 不要勾選 'Initialize with README'"
-    echo "   - 點擊 'Create repository'"
-    echo ""
-    echo "3. 在創建倉庫後，GitHub 會顯示命令。執行類似以下的命令："
-    echo ""
-    echo "   git remote add origin https://github.com/你的用戶名/jinyi-app.git"
-    echo "   git branch -M main"
-    echo "   git push -u origin main"
-    echo ""
+    echo "沒有檢測到代碼變更。"
+    # 選項：強制空提交以觸發部署
+    read -p "是否要強制創建一個空提交以觸發 Cloudflare 部署？(y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        git commit --allow-empty -m "Trigger: 強制觸發部署 ($(date +%Y-%m-%d\ %H:%M))"
+        echo "已創建觸發用提交。"
+    fi
 fi
 
-echo ""
-echo "─────────────────────────────────────"
-echo "📋 下一步操作："
-echo "─────────────────────────────────────"
-echo ""
-echo "1. ✅ 如果還沒有，請在 GitHub 創建倉庫"
-echo "2. ✅ 配置遠程倉庫並推送代碼（見上方指示）"
-echo "3. 🌐 前往 Cloudflare Pages 部署："
-echo "   https://dash.cloudflare.com"
-echo ""
-echo "4. 📝 配置構建設置："
-echo "   - Framework preset: Vite"
-echo "   - Build command: npm run build"
-echo "   - Build output directory: dist"
-echo ""
-echo "5. 🔐 添加環境變量："
-echo "   - VITE_SUPABASE_URL=https://zntvofpaohnouepquxke.supabase.co"
-echo "   - VITE_SUPABASE_ANON_KEY=sb_publishable_TZOgnWwcDA1bRfHghcRSyg_lbmnh4jb"
-echo "   - GEMINI_API_KEY=你的_Gemini_API_key"
-echo ""
-echo "6. 🎉 部署並訪問您的應用！"
-echo ""
-echo "詳細步驟請參考：DEPLOYMENT_NEXT_STEPS.md"
-echo ""
+# 推送到遠端
+echo -e "\n${YELLOW}☁️  正在推送到 GitHub...${NC}"
+current_branch=$(git branch --show-current)
+if [ -z "$current_branch" ]; then
+    current_branch="main"
+fi
+
+if git push origin $current_branch; then
+    echo -e "${GREEN}✅ 推送成功！${NC}"
+    echo "如果 Cloudflare Pages 有連接 GitHub，現在應該會自動開始部署。"
+else
+    echo -e "${RED}❌ 推送失敗。${NC}"
+    echo "請檢查您的網路連接或 GitHub 權限。"
+fi
+
+# 3. 手動部署指引
+echo -e "\n================================="
+echo -e "${GREEN}🎉 流程完成！${NC}"
+echo -e "================================="
+echo -e "如果您發現 Cloudflare 沒有自動部署，您可以手動上傳："
+echo -e "1. 進入 Cloudflare Dashboard > Pages > 您的專案"
+echo -e "2. 點擊 '${YELLOW}Create new deployment${NC}' 或 '${YELLOW}Upload assets${NC}'"
+echo -e "3. 上傳此目錄下的 '${GREEN}dist${NC}' 資料夾"
+echo -e "   路徑: $(pwd)/dist"
+echo -e "================================="
